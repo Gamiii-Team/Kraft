@@ -134,8 +134,9 @@ document.getElementById('uploadForm').addEventListener('submit', async e => {
   document.getElementById('keywords').innerHTML = '<p style="color:var(--text-muted)">Processing…</p>';
   document.getElementById('fileName').textContent = '';
 
+  const API_URL = window.API_URL || 'http://localhost:8000/extract-keywords';
   try {
-    const res = await fetch('http://localhost:8000/extract-keywords', { method: 'POST', body: formData });
+    const res = await fetch(API_URL, { method: 'POST', body: formData });
     if (!res.ok) throw new Error('Server error: ' + res.status);
     const data = await res.json();
 
@@ -148,7 +149,7 @@ document.getElementById('uploadForm').addEventListener('submit', async e => {
       data.keywords.forEach(k => {
         const card = document.createElement('div');
         card.className = 'keyword-card';
-        card.innerHTML = '<h3>' + escapeHtml(k.keyword) + '</h3><div class="score">Score: ' + (Math.round(parseFloat(k.score) * 1000) / 10) + '% *</div>';
+        card.innerHTML = '<h3>' + escapeHtml(cleanKeyword(k.keyword)) + '</h3><div class="score">Score: ' + (Math.round(parseFloat(k.score) * 1000) / 10) + '% *</div>';
         grid.appendChild(card);
       });
     }
@@ -156,6 +157,21 @@ document.getElementById('uploadForm').addEventListener('submit', async e => {
     document.getElementById('keywords').innerHTML = '<div class="keyword-card"><h3>Error</h3><div class="score">' + escapeHtml(err.message) + '</div></div>';
   }
 });
+
+function cleanKeyword(text) {
+  if (!text) return text;
+  const words = String(text).trim().split(/\s+/);
+  const seen = new Set();
+  const unique = [];
+  for (const w of words) {
+    const key = w.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      unique.push(w);
+    }
+  }
+  return unique.join(' ');
+}
 
 function escapeHtml(str) {
   const div = document.createElement('div');

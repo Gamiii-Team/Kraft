@@ -1,5 +1,4 @@
-fastapi
-uvicorn[standard]
+flask
 yake
 pypdf
 python-docx

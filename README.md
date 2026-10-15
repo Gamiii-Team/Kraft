@@ -1,6 +1,6 @@
 # Kraft
 
-FastAPI backend + basic HTML/CSS/JS frontend. Extracts keywords from `.txt`, `.pdf`, `.docx`, `.doc`, `.pptx` using YAKE. Filter bubbles from the UI feed directly into the filtering system.
+Flask backend + HTML/CSS/JS frontend. Extracts keywords from `.txt`, `.pdf`, `.docx`, `.doc`, `.pptx` using YAKE. Filter bubbles from the UI feed into the filtering system. Scores shown as % with relevance legend; repeated PPTX header words cleaned automatically.
 
 ---
 
@@ -8,23 +8,24 @@ FastAPI backend + basic HTML/CSS/JS frontend. Extracts keywords from `.txt`, `.p
 
 ```
 .
-├── app.py              # FastAPI server (patched for UI filter list)
-├── DockerFile          # Container build
+├── app.py              # Flask server
+├── Dockerfile
 ├── requirements.txt
-├── index.html          # UI: upload + results + theme toggle + filter bubbles
+├── index.html          # UI: upload + results + theme toggle + filter bubbles + file icon preview
 ├── style.css           # Dark (tech) / Light (editorial) palettes
-├── app.js              # Fetch, bubble tags, theme switch
+├── app.js              # Fetch (configurable API_URL), bubbles, theme, drag/drop, cleanKeyword
 └── README.md           # This file
 ```
 
 ---
+
 ## Quick Commands Reference
 
 | Task | Command |
 |---|---|
 | Build | `docker build -t kraft .` |
-| Start | `docker run -d --name kraft -p 8000:8000 kraft` |
-| Start server | `python3 -m http.server 3000` |
+| Start (Docker) | `docker run -d --name kraft -p 8000:8000 kraft` |
+| Start (local) | `pip install -r requirements.txt && python app.py` |
 | Status | `docker ps` |
 | Logs | `docker logs kraft` |
 | Stop (end of day) | `docker stop kraft` |
@@ -33,53 +34,57 @@ FastAPI backend + basic HTML/CSS/JS frontend. Extracts keywords from `.txt`, `.p
 
 ---
 
-## Initializing Docker (First Time / After Changes)
+## Running (Local)
 
 ```bash
-# 1. Build image (run from project root)
-docker build -t kraft .
+# 1. Install dependencies
+pip install -r requirements.txt
 
-# 2. Confirm image exists
-docker images | grep kraft
+# 2. Start server
+python app.py
+# → http://localhost:8000
 
-# 3. Clean up old containers (optional)
-docker rm -f kraft 2>/dev/null; echo "cleaned"
+# 3. Open UI (serve static files)
+python -m http.server 8080
+# Then open http://localhost:8080/index.html in browser
 ```
 
 ---
 
-## Running Docker (Day-to-Day / End of Day)
+## Running (Docker)
 
 ```bash
-# Start container (port 8000 mapped to host)
-docker run -d --name kraft -p 8000:8000 kraft
+# Build
+ docker build -t kraft .
 
-# start server 
-python3 -m http.server 3000 
+# Start
+ docker rm -f kraft 2>/dev/null; docker run -d --name kraft -p 8000:8000 kraft
 
-# web page
-localhost:3000
-
-# Check it is running
-docker ps
-
-# View logs (live)
+# View logs
 docker logs -f kraft
 
-# Stop at end of day
-docker stop kraft
-
-# Remove after stop (clean slate)
-docker rm kraft
+# Stop / remove
+docker stop kraft; docker rm kraft
 ```
+
+---
+
+## Features
+
+- **Drag & drop** file upload with visual file icon + filename preview.
+- **Click to open** file picker (works on mobile / desktop).
+- **Clear previous results** when a new file is uploaded.
+- **Score %** shown with `*` and bottom legend explaining relevance.
+- **Filter bubbles** (type keyword + Enter) feed `unwanted_words_json` to backend.
+- **CleanKeyword** removes repetitive PPTX header patterns (e.g., "Modelling STATISTICAL MODELLING" → "Modelling STATISTICAL").
 
 ---
 
 ## Accessing the App
 
-- **API docs:** http://localhost:8000/docs
-- **UI:** open `index.html` in browser (or serve with `python -m http.server 8080`)
-- The UI posts to `http://localhost:8000/extract-keywords` using `FormData` (file + `unwanted_words_json`).
+- **API endpoint:** `POST http://localhost:8000/extract-keywords` (FormData: `file`, `unwanted_words_json`)
+- **UI:** open `index.html` in browser, or serve with `python -m http.server 8080`
+- The UI posts to the endpoint using `FormData`; `app.js` uses `API_URL = window.API_URL || 'http://localhost:8000/extract-keywords'` for easy deployment.
 
 ---
 
@@ -91,11 +96,28 @@ In the UI:
 3. Upload a document and submit.
 4. The bubbles are sent as JSON to `unwanted_words_json`; the backend filters them from results.
 
-> Note: persistence (documents staying in system between restarts) requires backend storage; currently backend uses temporary files cleaned after each request. Bubble filter is session-level per request.
+> Note: persistence (documents staying between restarts) requires backend storage; currently backend uses temporary files cleaned after each request. Bubble filter is session-level per request.
+
+---
+
+## PythonAnywhere / Cloud Deployment Notes
+
+For PythonAnywhere (WSGI):
+- Source code: `/home/ravijaanthony/Kraft/`
+- WSGI file (`/var/www/..._wsgi.py`):
+```python
+import sys
+sys.path.insert(0, '/home/ravijaanthony/Kraft')
+from app import app as application
+```
+- Set static files URL `/` → `/home/ravijaanthony/Kraft/` if serving UI from root.
+
+For Cloudflare Tunnel (no code change): use `cloudflared tunnel` to expose local `localhost:8000`.
 
 ---
 
 ## Requirements
 
-- Docker installed and running
-- Browser with JavaScript enabled (for UI bubbles + theme toggle)
+- Python 3.9+
+- Docker (optional, for container)
+- Browser with JavaScript enabled (bubbles + theme toggle)

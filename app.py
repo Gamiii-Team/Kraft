@@ -2,40 +2,34 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
-from fastapi.middleware.cors import CORSMiddleware
+import json
+from flask import Flask, request, jsonify
 import yake
 from pypdf import PdfReader
 import docx
 from pptx import Presentation
 
-app = FastAPI(title="Kraft", version="1.0")
+app = Flask(__name__)
 
-# Enable CORS (so frontend apps or external clients can talk to it)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 def extract_text_from_file(file_path: str) -> str:
-    """Detects file extension and extracts text accordingly."""
     ext = Path(file_path).suffix.lower()
     text = ""
-    
     if ext == ".txt":
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
             text = f.read()
-            
     elif ext == ".pdf":
         reader = PdfReader(file_path)
         for page in reader.pages:
             page_text = page.extract_text()
             if page_text:
                 text += page_text + "\n"
-                
     elif ext in [".docx", ".doc"]:
         doc = docx.Document(file_path)
         paragraphs = [para.text for para in doc.paragraphs]
@@ -44,7 +38,6 @@ def extract_text_from_file(file_path: str) -> str:
                 for cell in row.cells:
                     paragraphs.append(cell.text)
         text = "\n".join(paragraphs)
-        
     elif ext == ".pptx":
         prs = Presentation(file_path)
         slide_texts = []
@@ -54,23 +47,21 @@ def extract_text_from_file(file_path: str) -> str:
                     for paragraph in shape.text_frame.paragraphs:
                         slide_texts.append(paragraph.text)
         text = "\n".join(slide_texts)
-        
     else:
         raise ValueError(f"Unsupported file format: {ext}")
-        
     return text
 
-import json
-
-@app.post("/extract-keywords")
-async def extract_keywords_api(file: UploadFile = File(...), unwanted_words_json: str = Form(default="[]")):
+@app.route('/extract-keywords', methods=['POST'])
+def extract_keywords():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    file = request.files['file']
     supported_extensions = ['.txt', '.pdf', '.docx', '.doc', '.pptx']
     ext = Path(file.filename).suffix.lower()
-    
     if ext not in supported_extensions:
-        raise HTTPException(status_code=400, detail=f"Unsupported file format: {ext}")
-    
-    # Build filter list from UI bubbles + hardcoded defaults
+        return jsonify({"detail": f"Unsupported file format: {ext}"}), 400
+
+    unwanted_words_json = request.form.get('unwanted_words_json', '[]')
     try:
         extra_unwanted = json.loads(unwanted_words_json)
         if isinstance(extra_unwanted, list):
@@ -88,48 +79,34 @@ async def extract_keywords_api(file: UploadFile = File(...), unwanted_words_json
             'chapter', 'summary', 'overview', 'slep', 'contents',
             'introduction', 'conclusion', 'declaration', 'acknowledgement'
         ]
-    
-    # Save the uploaded file temporarily
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as temp_file:
-        shutil.copyfileobj(file.file, temp_file)
+        file.save(temp_file)
         temp_file_path = temp_file.name
-        
+
     try:
-        # Extract text
         document_text = extract_text_from_file(temp_file_path)
-        
         if not document_text.strip():
-            return {"filename": file.filename, "keywords": [], "message": "Document is empty or text could not be extracted."}
-        
-        # Configure YAKE
+            return jsonify({"filename": file.filename, "keywords": [], "message": "Document is empty or text could not be extracted."})
+
         custom_kw_extractor = yake.KeywordExtractor(
             lan="en",
             n=3,
             dedupLim=0.9,
-            top=20  # Extract top 20 to allow room for filtering
+            top=20
         )
-        
-        # unwanted_words already set from form input above
-        
         raw_keywords = custom_kw_extractor.extract_keywords(document_text)
-        
-        # Filter results
         filtered_keywords = []
         for kw, score in raw_keywords:
             if not any(unwanted in kw.lower() for unwanted in unwanted_words):
                 filtered_keywords.append({"keyword": kw, "score": round(float(score), 4)})
-                
         filtered_keywords = filtered_keywords[:10]
-        
-        return {
-            "filename": file.filename,
-            "keywords": filtered_keywords
-        }
-        
+        return jsonify({"filename": file.filename, "keywords": filtered_keywords})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-        
+        return jsonify({"detail": str(e)}), 500
     finally:
-        # Clean up the temporary file from disk
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000)
