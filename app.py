@@ -9,7 +9,7 @@ from pypdf import PdfReader
 import docx
 from pptx import Presentation
 
-app = FastAPI(title="Document Keyword Extraction API", version="1.0")
+app = FastAPI(title="Kraft", version="1.0")
 
 # Enable CORS (so frontend apps or external clients can talk to it)
 app.add_middleware(

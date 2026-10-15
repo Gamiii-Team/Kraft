@@ -1,4 +1,4 @@
-# Document Keyword Extraction API
+# Kraft
 
 FastAPI backend + basic HTML/CSS/JS frontend. Extracts keywords from `.txt`, `.pdf`, `.docx`, `.doc`, `.pptx` using YAKE. Filter bubbles from the UI feed directly into the filtering system.
 
@@ -18,18 +18,32 @@ FastAPI backend + basic HTML/CSS/JS frontend. Extracts keywords from `.txt`, `.p
 ```
 
 ---
+## Quick Commands Reference
+
+| Task | Command |
+|---|---|
+| Build | `docker build -t kraft .` |
+| Start | `docker run -d --name kraft -p 8000:8000 kraft` |
+| Start server | `python3 -m http.server 3000` |
+| Status | `docker ps` |
+| Logs | `docker logs kraft` |
+| Stop (end of day) | `docker stop kraft` |
+| Remove | `docker rm kraft` |
+| Restart same | `docker start kraft` |
+
+---
 
 ## Initializing Docker (First Time / After Changes)
 
 ```bash
 # 1. Build image (run from project root)
-docker build -t doc-keyword-api .
+docker build -t kraft .
 
 # 2. Confirm image exists
-docker images | grep doc-keyword-api
+docker images | grep kraft
 
 # 3. Clean up old containers (optional)
-docker rm -f keyword-api 2>/dev/null; echo "cleaned"
+docker rm -f kraft 2>/dev/null; echo "cleaned"
 ```
 
 ---
@@ -38,19 +52,25 @@ docker rm -f keyword-api 2>/dev/null; echo "cleaned"
 
 ```bash
 # Start container (port 8000 mapped to host)
-docker run -d --name keyword-api -p 8000:8000 doc-keyword-api
+docker run -d --name kraft -p 8000:8000 kraft
+
+# start server 
+python3 -m http.server 3000 
+
+# web page
+localhost:3000
 
 # Check it is running
 docker ps
 
 # View logs (live)
-docker logs -f keyword-api
+docker logs -f kraft
 
 # Stop at end of day
-docker stop keyword-api
+docker stop kraft
 
 # Remove after stop (clean slate)
-docker rm keyword-api
+docker rm kraft
 ```
 
 ---
@@ -72,20 +92,6 @@ In the UI:
 4. The bubbles are sent as JSON to `unwanted_words_json`; the backend filters them from results.
 
 > Note: persistence (documents staying in system between restarts) requires backend storage; currently backend uses temporary files cleaned after each request. Bubble filter is session-level per request.
-
----
-
-## Quick Commands Reference
-
-| Task | Command |
-|---|---|
-| Build | `docker build -t doc-keyword-api .` |
-| Start | `docker run -d --name keyword-api -p 8000:8000 doc-keyword-api` |
-| Status | `docker ps` |
-| Logs | `docker logs keyword-api` |
-| Stop (end of day) | `docker stop keyword-api` |
-| Remove | `docker rm keyword-api` |
-| Restart same | `docker start keyword-api` |
 
 ---
 

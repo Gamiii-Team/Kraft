@@ -1,0 +1,5 @@
+#!/bin/bash
+# Wrapper so docker run prints the URL instead of just a container hash
+docker rm -f kraft 2>/dev/null
+docker run -d --name kraft -p 8000:8000 kraft
+echo "Kraft is running at: http://localhost:8000"
