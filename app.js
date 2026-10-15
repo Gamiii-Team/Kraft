@@ -55,11 +55,75 @@ filterInput.addEventListener('keydown', e => {
 /* Make removeBubble global for inline onclick */
 window.removeBubble = removeBubble;
 
+/* ===== Drag & drop + file state ===== */
+const dropArea = document.getElementById('dropArea');
+const fileInput = document.getElementById('fileInput');
+
+function clearPreviousResults() {
+  document.getElementById('keywords').innerHTML = '';
+  document.getElementById('fileName').textContent = '';
+}
+
+function updateFileUI() {
+  const dropText = document.getElementById('dropText');
+  const filePreview = document.getElementById('filePreview');
+  const selectedFileName = document.getElementById('selectedFileName');
+  if (fileInput.files && fileInput.files.length) {
+    dropText.hidden = true;
+    filePreview.hidden = false;
+    selectedFileName.textContent = fileInput.files[0].name;
+    dropArea.classList.add('has-file');
+  } else {
+    dropText.hidden = false;
+    filePreview.hidden = true;
+    selectedFileName.textContent = '';
+    dropArea.classList.remove('has-file');
+  }
+}
+
+dropArea.addEventListener('click', () => {
+  fileInput.click();
+});
+
+dropArea.addEventListener('dragenter', e => {
+  e.preventDefault();
+  dropArea.classList.add('drag-active');
+});
+
+dropArea.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropArea.classList.add('drag-active');
+});
+
+dropArea.addEventListener('dragleave', e => {
+  if (!dropArea.contains(e.relatedTarget)) {
+    dropArea.classList.remove('drag-active');
+  }
+});
+
+dropArea.addEventListener('drop', e => {
+  e.preventDefault();
+  dropArea.classList.remove('drag-active');
+  const files = e.dataTransfer.files;
+  if (files && files.length) {
+    const dt = new DataTransfer();
+    for (let i = 0; i < files.length; i++) dt.items.add(files[i]);
+    fileInput.files = dt.files;
+    updateFileUI();
+    clearPreviousResults();
+  }
+});
+
+fileInput.addEventListener('change', () => {
+  updateFileUI();
+});
+
 /* ===== Form submit ===== */
 document.getElementById('uploadForm').addEventListener('submit', async e => {
   e.preventDefault();
   const fileInput = document.getElementById('fileInput');
   if (!fileInput.files.length) return;
+  clearPreviousResults();
 
   const formData = new FormData();
   formData.append('file', fileInput.files[0]);
@@ -84,7 +148,7 @@ document.getElementById('uploadForm').addEventListener('submit', async e => {
       data.keywords.forEach(k => {
         const card = document.createElement('div');
         card.className = 'keyword-card';
-        card.innerHTML = '<h3>' + escapeHtml(k.keyword) + '</h3><div class="score">Score: ' + k.score + '</div>';
+        card.innerHTML = '<h3>' + escapeHtml(k.keyword) + '</h3><div class="score">Score: ' + (Math.round(parseFloat(k.score) * 1000) / 10) + '% *</div>';
         grid.appendChild(card);
       });
     }

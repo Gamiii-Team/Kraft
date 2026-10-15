@@ -51,8 +51,15 @@ h2 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 
 /* ===== Drop / File input ===== */
 .drop-label { display: block; border: 2px dashed var(--border); border-radius: var(--radius); padding: 2.5rem 1rem; text-align: center; cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
 .drop-label:hover { border-color: var(--accent); background: rgba(56,189,248,0.06); }
-.drop-label input { display: none; }
+.drop-label input { opacity: 0; position: absolute; width: 0.1px; height: 0.1px; z-index: -1; pointer-events: none; }
 .drop-text { font-size: 0.95rem; color: var(--text-muted); }
+.drop-label.drag-active { border-color: var(--accent); background: rgba(56,189,248,0.10); }
+.drop-label.has-file { border-style: solid; border-color: var(--accent); background: rgba(56,189,248,0.08); padding: 1.5rem 1rem; }
+
+.file-preview:not([hidden]) { display: flex; align-items: center; justify-content: center; gap: 0.6rem; font-size: 1rem; color: var(--text); font-weight: 600; }
+.file-preview[hidden] { display: none; }
+.file-icon { width: 1.6rem; height: 1.6rem; color: var(--accent); flex-shrink: 0; }
+.file-name { word-break: break-word; max-width: 90%; }
 
 /* ===== Filter bubbles ===== */
 .filter-area { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
@@ -83,6 +90,8 @@ h2 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 
 
 /* ===== Footer ===== */
 footer { margin-top: 3rem; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
+
+.score-legend { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem; }
 
 /* ===== Light-specific tweaks ===== */
 [data-theme="light"] .btn-primary { color: #fff; }
