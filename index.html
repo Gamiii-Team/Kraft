@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Keyword Extractor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="dark">
+  <div class="wrapper">
+    <header>
+      <h1>Document Keyword Extractor</h1>
+      <button id="themeToggle" aria-label="Switch theme">Switch Theme</button>
+    </header>
+
+    <main>
+      <section class="panel upload-panel" aria-label="Upload">
+        <h2>Upload Document</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+          <label for="fileInput" class="drop-label">
+            <span class="drop-text">Drop .txt / .pdf / .docx / .pptx here or click</span>
+            <input id="fileInput" type="file" accept=".txt,.pdf,.docx,.doc,.pptx" required />
+          </label>
+
+          <div class="filter-area" aria-label="Filter bubbles">
+            <label for="filterInput">Exclude keywords (hit Enter for bubbles):</label>
+            <div class="bubble-input-wrap">
+              <input id="filterInput" type="text" placeholder="type keyword and press Enter" autocomplete="off" />
+            </div>
+            <div id="bubbles" class="bubbles" aria-live="polite" aria-label="Excluded keywords"></div>
+            <input type="hidden" id="unwantedWords" name="unwanted_words_json" value="[]" />
+          </div>
+
+          <button type="submit" class="btn-primary">Extract Keywords</button>
+        </form>
+      </section>
+
+      <section class="panel results-panel" aria-label="Results" hidden>
+        <h2>Results</h2>
+        <div id="fileName" class="file-meta"></div>
+        <div id="keywords" class="keywords-grid"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>FastAPI + YAKE • Ports <strong>8000</strong> inside Docker</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

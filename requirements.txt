@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+yake
+pypdf
+python-docx
+python-pptx
